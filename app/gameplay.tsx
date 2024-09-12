@@ -126,12 +126,7 @@ export default function Gameplay() {
     const playBackgroundMusic = async () => {
       try {
 
-  //Ads 
-
-      // // Show interstitial ad before navigating to gameplay
-      // await AdMobInterstitial.setAdUnitID('ca-app-pub-8510154897428847/3356496582'); // Replace with your Ad Unit ID
-      // await AdMobInterstitial.requestAdAsync();
-      // await AdMobInterstitial.showAdAsync();
+  
 
       ///
         const { sound: newSound } = await Audio.Sound.createAsync(

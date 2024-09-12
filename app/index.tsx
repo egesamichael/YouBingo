@@ -19,32 +19,8 @@ export default function Index() {
     image: ballImages[Math.floor(Math.random() * ballImages.length)],
   }));
 
-  useEffect(() => {
-    const loadBackgroundMusic = async () => {
-      try {
-        const { sound } = await Audio.Sound.createAsync(
-          require('../assets/music/gameplay.mp3'),
-          {
-            shouldPlay: true,
-            isLooping: true,
-          }
-        );
-        setBackgroundSound(sound);
-        console.log('Background music loaded and playing');
-      } catch (error) {
-        console.error('Error loading background music:', error);
-      }
-    };
+ 
 
-    //loadBackgroundMusic();
-
-    return () => {
-      if (backgroundSound) {
-        backgroundSound.unloadAsync();
-      }
-     
-    };
-  }, [backgroundSound]);
 
   useEffect(() => {
     const dropBalls = () => {
@@ -77,19 +53,37 @@ export default function Index() {
     dropBalls();
   }, []);
 
-  const handlePlayNow = async () => {
-    if (backgroundSound) {
+  useEffect(() => {
+    const playBackgroundMusic = async () => {
       try {
-        await backgroundSound.stopAsync();
-        await backgroundSound.unloadAsync();
-        console.log('Background music stopped and unloaded');
+
+      
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require('../assets/music/welcome.mp3'),
+          {
+            shouldPlay: true,
+            isLooping: true,
+          }
+        );
+        setBackgroundSound(newSound);
+        console.log('Playing background music');
+        await newSound.playAsync();
       } catch (error) {
-        console.error('Error stopping or unloading background music:', error);
+        console.error('Error playing background music:', error);
       }
-    }
+    };
 
-  
+    playBackgroundMusic();
 
+    return () => {
+      if (backgroundSound) {
+        backgroundSound.unloadAsync();
+      }
+    };
+  }, []);
+
+  const handlePlayNow = () => {
+    backgroundSound?.stopAsync();
     router.push('./gameplay');
   };
 

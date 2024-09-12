@@ -4,6 +4,9 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import mobileAds from 'react-native-google-mobile-ads';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -16,6 +19,20 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Bingo: require('../assets/fonts/BINGO.ttf'),
   });
+
+// Initialize Google Mobile Ads SDK
+useEffect(() => {
+  (async () => {
+    const { status: trackingStatus } = await requestTrackingPermissionsAsync(); // <-- Use it here
+    if (trackingStatus !== 'granted') {
+      // Handle non-granted permissions
+    }
+
+    // Initialize the ads
+    await mobileAds().initialize();
+  })();
+}, []);
+
 
   useEffect(() => {
     if (loaded) {

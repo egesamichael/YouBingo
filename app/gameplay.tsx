@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { Audio } from 'expo-av';
+import InlineAd from './InlineAd';
 
-// Function to generate Bingo numbers based on selected mode
+
 const generateBingoNumbers = (mode: string) => {
   switch (mode) {
     case 'Four Corners':
@@ -11,13 +13,12 @@ const generateBingoNumbers = (mode: string) => {
     case 'Full Card':
       return Array.from({ length: 25 }, (_, i) => i + 1);
     case 'Classic Bingo':
-      return Array.from({ length: 25 }, (_, i) => i + 1); // Adjust based on classic bingo rules
+      return Array.from({ length: 25 }, (_, i) => i + 1);
     default:
       return Array.from({ length: 25 }, (_, i) => i + 1);
   }
 };
 
-// Function to generate winning numbers based on mode
 const generateWinningNumbers = (mode: string) => {
   const winningNumbers: number[] = [];
 
@@ -27,7 +28,6 @@ const generateWinningNumbers = (mode: string) => {
     case 'Full Card':
       return Array.from({ length: 25 }, (_, i) => i + 1);
     case 'Classic Bingo':
-      // Generate a random set of winning numbers (e.g., 5 numbers for Classic Bingo)
       while (winningNumbers.length < 5) {
         const num = Math.floor(Math.random() * 25) + 1;
         if (!winningNumbers.includes(num)) {
@@ -40,53 +40,60 @@ const generateWinningNumbers = (mode: string) => {
   }
 };
 
-// Function to check if the selected numbers meet the Bingo criteria
 const checkForBingo = (markedNumbers: boolean[], winningNumbers: number[]): boolean => {
   return winningNumbers.every(num => markedNumbers[num - 1]);
 };
 
-// BingoCard component to render Bingo numbers and handle selections
-const BingoCard = ({ mode, markedNumbers, setMarkedNumbers, selectionCount, setSelectionCount }: 
-  { mode: string, markedNumbers: boolean[], setMarkedNumbers: (marked: boolean[]) => void, selectionCount: number, setSelectionCount: (count: number) => void }) => {
-  
+const BingoCard = ({
+  mode,
+  markedNumbers,
+  setMarkedNumbers,
+  selectionCount,
+  setSelectionCount,
+  winningNumbers,
+  revealWinningNumbers,
+  onNumberSelect,
+}: {
+  mode: string;
+  markedNumbers: boolean[];
+  setMarkedNumbers: (marked: boolean[]) => void;
+  selectionCount: number;
+  setSelectionCount: (count: number) => void;
+  winningNumbers: number[];
+  revealWinningNumbers: boolean;
+  onNumberSelect: (index: number) => void;
+}) => {
   const maxSelections = mode === 'Full Card' ? 25 : 5;
   const numbers = generateBingoNumbers(mode);
-  const winningNumbers = generateWinningNumbers(mode);
 
   const handlePress = (index: number) => {
-    const newMarkedNumbers = [...markedNumbers];
-    const isSelected = newMarkedNumbers[index];
-    
-    if (isSelected) {
-      newMarkedNumbers[index] = false;
-      setSelectionCount(selectionCount - 1);
-    } else if (selectionCount < maxSelections) {
-      newMarkedNumbers[index] = true;
-      setSelectionCount(selectionCount + 1);
+    if (selectionCount < maxSelections || markedNumbers[index]) {
+      onNumberSelect(index);
     } else {
       Alert.alert('Selection Limit Reached', `You can only select up to ${maxSelections} numbers.`);
-    }
-    
-    setMarkedNumbers(newMarkedNumbers);
-
-    if (checkForBingo(newMarkedNumbers, winningNumbers)) {
-      Alert.alert('Congratulations!', 'You have Bingo!', [
-        { text: 'OK', onPress: () => console.log('Bingo acknowledged') },
-      ]);
     }
   };
 
   return (
     <View style={styles.grid}>
-      {numbers.map((number, index) => (
-        <TouchableOpacity
-          key={number}
-          style={[styles.cell, markedNumbers[index] && styles.cellMarked]}
-          onPress={() => handlePress(index)}
-        >
-          <Text style={styles.number}>{number}</Text>
-        </TouchableOpacity>
-      ))}
+      {numbers.map((number, index) => {
+        const isWinning = revealWinningNumbers && winningNumbers.includes(number);
+        const cellStyle = [
+          styles.cell,
+          markedNumbers[index] && styles.cellMarked,
+          isWinning && styles.cellWinning,
+        ];
+
+        return (
+          <TouchableOpacity
+            key={number}
+            style={cellStyle}
+            onPress={() => handlePress(index)}
+          >
+            <Text style={styles.number}>{number}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -95,7 +102,11 @@ export default function Gameplay() {
   const [bingoMode, setBingoMode] = useState<string>('Classic Bingo');
   const [markedNumbers, setMarkedNumbers] = useState<boolean[]>(new Array(25).fill(false));
   const [selectionCount, setSelectionCount] = useState<number>(0);
+  const [winningNumbers, setWinningNumbers] = useState<number[]>(generateWinningNumbers('Classic Bingo'));
+  const [revealWinningNumbers, setRevealWinningNumbers] = useState<boolean>(false);
   const router = useRouter();
+  const [selectSound, setSelectSound] = useState<Audio.Sound | null>(null);
+  const [backgroundSound, setBackgroundSound] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -103,6 +114,7 @@ export default function Gameplay() {
         const mode = await AsyncStorage.getItem('bingoMode');
         if (mode) {
           setBingoMode(mode);
+          setWinningNumbers(generateWinningNumbers(mode));
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -110,11 +122,104 @@ export default function Gameplay() {
     };
 
     loadSettings();
+
+    const playBackgroundMusic = async () => {
+      try {
+
+  //Ads 
+
+      // // Show interstitial ad before navigating to gameplay
+      // await AdMobInterstitial.setAdUnitID('ca-app-pub-8510154897428847/3356496582'); // Replace with your Ad Unit ID
+      // await AdMobInterstitial.requestAdAsync();
+      // await AdMobInterstitial.showAdAsync();
+
+      ///
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require('../assets/music/gameplay.mp3'),
+          {
+            shouldPlay: true,
+            isLooping: true,
+          }
+        );
+        setBackgroundSound(newSound);
+        console.log('Playing background music');
+        await newSound.playAsync();
+      } catch (error) {
+        console.error('Error playing background music:', error);
+      }
+    };
+
+    const loadSelectSound = async () => {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require('../assets/music/select.wav')
+        );
+        setSelectSound(newSound);
+        console.log('Select sound loaded');
+      } catch (error) {
+        console.error('Error loading select sound:', error);
+      }
+    };
+
+    playBackgroundMusic();
+    loadSelectSound();
+
+    return () => {
+      if (backgroundSound) {
+        backgroundSound.unloadAsync();
+      }
+      if (selectSound) {
+        selectSound.unloadAsync();
+      }
+    };
   }, []);
+
+  const handleNumberSelect = async (index: number) => {
+    console.log(`Number selected: ${index}`);
+    const newMarkedNumbers = [...markedNumbers];
+    const isSelected = newMarkedNumbers[index];
+
+    if (isSelected) {
+      newMarkedNumbers[index] = false;
+      setSelectionCount(selectionCount - 1);
+    } else if (selectionCount < 5) {
+      newMarkedNumbers[index] = true;
+      setSelectionCount(selectionCount + 1);
+    }
+
+    setMarkedNumbers(newMarkedNumbers);
+
+    if (selectSound) {
+      try {
+        await selectSound.stopAsync();
+        await selectSound.setPositionAsync(0);
+        await selectSound.playAsync();
+        console.log('Playing select sound');
+      } catch (error) {
+        console.error('Error playing select sound:', error);
+      }
+    } else {
+      console.log('Select sound not loaded');
+    }
+  };
 
   const resetGame = () => {
     setMarkedNumbers(new Array(25).fill(false));
     setSelectionCount(0);
+    setWinningNumbers(generateWinningNumbers(bingoMode));
+    setRevealWinningNumbers(false);
+    console.log('Game reset');
+  };
+
+  const checkWinningNumbers = () => {
+    setRevealWinningNumbers(true);
+    if (checkForBingo(markedNumbers, winningNumbers)) {
+      Alert.alert('Congratulations!', 'You have Bingo!', [
+        { text: 'OK', onPress: () => console.log('Bingo acknowledged') },
+      ]);
+    } else {
+      Alert.alert('No Bingo', 'Try again!');
+    }
   };
 
   return (
@@ -129,16 +234,30 @@ export default function Gameplay() {
             style={styles.icon}
           />
         </TouchableOpacity>
+
+        <Text style={styles.modeText}>{bingoMode}</Text>
+        <Text style={styles.modeText2}>Select {winningNumbers.length} numbers</Text>
         <BingoCard 
           mode={bingoMode} 
           markedNumbers={markedNumbers} 
           setMarkedNumbers={setMarkedNumbers} 
           selectionCount={selectionCount} 
           setSelectionCount={setSelectionCount} 
+          winningNumbers={winningNumbers}  
+          revealWinningNumbers={revealWinningNumbers}
+          onNumberSelect={handleNumberSelect}
         />
+        <TouchableOpacity style={styles.checkButton} onPress={checkWinningNumbers}>
+          <Text style={styles.checkButtonText}>Check Winning Numbers</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
           <Text style={styles.resetButtonText}>Reset Game</Text>
         </TouchableOpacity>
+
+        <View style={styles.adContainer}>
+          <InlineAd/>
+        </View>
+    
       </View>
     </ImageBackground>
   );
@@ -161,42 +280,76 @@ const styles = StyleSheet.create({
   },
   settingsIcon: {
     position: 'absolute',
-    top: 40,
-    right: 20,
+    top: 60,
+    right: 18,
+  },
+  modeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#fff',
+  },
+  modeText2: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#fff',
   },
   grid: {
-    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    width: '100%',
+    marginBottom: 20,
   },
   cell: {
-    width: 60,
+    width: '18%',  // Slightly less than 20% to allow for margins
     height: 60,
-    backgroundColor: '#ffeb3b',
-    borderColor: '#ff9800',
-    borderWidth: 2,
-    margin: 5,
+    margin: 2,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    backgroundColor: '#6a5acd',
+    borderRadius: 10,
   },
   cellMarked: {
-    backgroundColor: '#d32f2f',
+    backgroundColor: '#ff4500',
+  },
+  cellWinning: {
+    backgroundColor: '#32cd32',
   },
   number: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  resetButton: {
-    backgroundColor: '#2196F3',
-    padding: 10,
-    borderRadius: 5,
-    margin: 10,
-  },
-  resetButtonText: {
     fontSize: 18,
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  checkButton: {
+    marginTop: 20,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#6a5acd',
+    borderRadius: 10,
+  },
+  checkButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  resetButton: {
+    marginTop: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    backgroundColor: '#ff4500',
+    borderRadius: 10,
+  },
+  resetButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  adContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '50%',
+    alignItems: 'center',
   },
 });

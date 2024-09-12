@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+    <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-8510154897428847~5866275707</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>We use your data to provide personalized ads and improve your experience.</string>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>

@@ -1,8 +1,11 @@
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Image, Animated, Easing } from 'react-native';
+import { Audio } from 'expo-av';
+
 
 export default function Index() {
+  const [backgroundSound, setBackgroundSound] = useState<Audio.Sound | null>(null);
   const ballImages = [
     require('../assets/images/ball1.png'),
     require('../assets/images/ball2.png'),
@@ -13,8 +16,35 @@ export default function Index() {
     translateY: useRef(new Animated.Value(-100)).current,
     translateX: useRef(new Animated.Value(Math.random() * 300 - 150)).current,
     rotate: useRef(new Animated.Value(0)).current,
-    image: ballImages[Math.floor(Math.random() * ballImages.length)], // Randomly select a ball image
+    image: ballImages[Math.floor(Math.random() * ballImages.length)],
   }));
+
+  useEffect(() => {
+    const loadBackgroundMusic = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('../assets/music/gameplay.mp3'),
+          {
+            shouldPlay: true,
+            isLooping: true,
+          }
+        );
+        setBackgroundSound(sound);
+        console.log('Background music loaded and playing');
+      } catch (error) {
+        console.error('Error loading background music:', error);
+      }
+    };
+
+    //loadBackgroundMusic();
+
+    return () => {
+      if (backgroundSound) {
+        backgroundSound.unloadAsync();
+      }
+     
+    };
+  }, [backgroundSound]);
 
   useEffect(() => {
     const dropBalls = () => {
@@ -47,6 +77,22 @@ export default function Index() {
     dropBalls();
   }, []);
 
+  const handlePlayNow = async () => {
+    if (backgroundSound) {
+      try {
+        await backgroundSound.stopAsync();
+        await backgroundSound.unloadAsync();
+        console.log('Background music stopped and unloaded');
+      } catch (error) {
+        console.error('Error stopping or unloading background music:', error);
+      }
+    }
+
+  
+
+    router.push('./gameplay');
+  };
+
   return (
     <ImageBackground
       source={require('../assets/images/background.png')}
@@ -56,7 +102,7 @@ export default function Index() {
         {ballAnimations.map((animation, index) => (
           <Animated.Image
             key={index}
-            source={animation.image} // Use the randomly selected ball image
+            source={animation.image}
             style={[
               styles.ball,
               {
@@ -76,7 +122,7 @@ export default function Index() {
         ))}
         <Image source={require('../assets/images/bingo.png')} style={styles.image} />
         <Text style={styles.text}>You Bingo!</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.push('./gameplay')}>
+        <TouchableOpacity style={styles.button} onPress={handlePlayNow}>
           <Text style={styles.buttonText}>Play Now!</Text>
         </TouchableOpacity>
       </View>

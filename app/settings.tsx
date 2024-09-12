@@ -1,57 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import { useState } from 'react';
+import { Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
+  const [soundOn, setSoundOn] = useState(false);
+  const [musicOn, setMusicOn] = useState(false);
   const [bingoMode, setBingoMode] = useState('Classic Bingo');
-
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const storedMode = await AsyncStorage.getItem('bingoMode');
-        if (storedMode) {
-          setBingoMode(storedMode);
-        }
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    };
-
-    loadSettings();
-  }, []);
-
-  const handleSave = async (mode: string) => {
-    try {
-      await AsyncStorage.setItem('bingoMode', mode);
-      setBingoMode(mode);
-      Alert.alert('Settings Saved', `Bingo mode set to ${mode}`);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    }
-  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Select Bingo Mode:</Text>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleSave('Classic Bingo')}
+      <ImageBackground
+        source={require('../assets/images/gameplay.png')}
+        style={styles.backgroundImage}
       >
-        <Text style={styles.buttonText}>Classic Bingo</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleSave('Four Corners')}
-      >
-        <Text style={styles.buttonText}>Four Corners</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => handleSave('Full Card')}
-      >
-        <Text style={styles.buttonText}>Full Card</Text>
-      </TouchableOpacity>
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.headerText}>Settings</Text>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity 
+              style={[
+                styles.toggleButton, 
+                { backgroundColor: soundOn ? '#1E90FF' : '#FF4500' },
+              ]}
+              onPress={() => setSoundOn(!soundOn)}
+            >
+              {soundOn ? (
+                <Entypo name="sound" size={24} color="white" />
+              ) : (
+                <Entypo name="sound-mute" size={24} color="white" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.toggleButton, 
+                { backgroundColor: musicOn ? '#1E90FF' : '#FF4500' },
+              ]}
+              onPress={() => setMusicOn(!musicOn)}
+            >
+              {musicOn ? (
+                <MaterialCommunityIcons name="music-note" size={24} color="white" />
+              ) : (
+                <MaterialCommunityIcons name="music-note-off" size={24} color="white" />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.optionButton}>
+            <Text style={styles.optionText}>Language</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.optionButton}>
+            <Text style={styles.optionText}>Invite</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.optionButton}>
+            <Text style={styles.optionText}>About</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.optionButton, styles.supportButton]}>
+            <Text style={styles.optionText}>Support</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -59,26 +70,57 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#D87FD2', // Pinkish background
+  },
+  backgroundImage: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: 'center',
+    padding: 20,
   },
-  title: {
-    fontSize: 32,
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#ff6347',
+  header: {
+    backgroundColor: '#862D91',
     padding: 10,
-    borderRadius: 5,
-    marginVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 20,
   },
-  buttonText: {
-    fontSize: 18,
-    color: '#fff',
+  headerText: {
+    fontSize: 24,
+    color: '#FFD700',
+    fontWeight: 'bold',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  toggleButton: {
+    padding: 10,
+    borderRadius: 10,
+    marginHorizontal: 5,
+  },
+  optionButton: {
+    backgroundColor: '#1E90FF',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    alignItems: 'center',
+    width: '100%',
+  },
+  supportButton: {
+    backgroundColor: '#32CD32',
+  },
+  optionText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+  },
+  card: {
+    width: '90%',
+    height: '40%',
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
 });

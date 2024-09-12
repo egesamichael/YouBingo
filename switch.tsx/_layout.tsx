@@ -9,6 +9,7 @@ import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import React from 'react';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -49,6 +50,7 @@ useEffect(() => {
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="gameplay" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         
       </Stack>

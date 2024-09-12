@@ -26,13 +26,15 @@
       ],
       "package": "com.egesamichael.YouBingo"
     },
-    "react-native-google-mobile-ads": {
-      "android_app_id": "ca-app-pub-8510154897428847~5866275707",
-      "ios_app_id": "ca-app-pub-8510154897428847~5866275707"
-    },
+    
     "plugins": [
       "expo-tracking-transparency"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ac643769-766f-4d30-b33b-b561a40fe9f8"
+      }
+    }
   },
   "web": {
     "bundler": "metro",

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Image, Animated, Easing } from 'react-native';
 
@@ -75,8 +76,8 @@ export default function Index() {
         ))}
         <Image source={require('../assets/images/bingo.png')} style={styles.image} />
         <Text style={styles.text}>You Bingo!</Text>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Get Started</Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('./gameplay')}>
+          <Text style={styles.buttonText}>Play Now!</Text>
         </TouchableOpacity>
       </View>
     </ImageBackground>
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 62,
-    color: 'yellow',
+    color: '#FFD700',
     marginBottom: 20,
     fontFamily: 'Bingo',
   },

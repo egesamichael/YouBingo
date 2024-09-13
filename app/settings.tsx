@@ -11,7 +11,7 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require('../assets/images/gameplay.png')}
+        source={require('../assets/images/gameplay.jpg')}
         style={styles.backgroundImage}
       >
         <View style={styles.card}>

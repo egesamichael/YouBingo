@@ -89,7 +89,7 @@ export default function Index() {
 
   return (
     <ImageBackground
-      source={require('../assets/images/background.png')}
+      source={require('../assets/images/background.jpg')}
       style={styles.background}
     >
       <View style={styles.container}>

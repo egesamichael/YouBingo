@@ -219,7 +219,7 @@ export default function Gameplay() {
 
   return (
     <ImageBackground
-      source={require('../assets/images/gameplay.png')}
+      source={require('../assets/images/gameplay.jpg')}
       style={styles.background}
     >
       <View style={styles.container}>

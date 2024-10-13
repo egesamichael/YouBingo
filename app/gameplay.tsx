@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image, Alert } from 'react-native';
+import { StyleSheet, Text, View, ImageBackground, TouchableOpacity, Image, Alert, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Audio } from 'expo-av';
 import InlineAd from './InlineAd';
-
+import Dialog from "react-native-dialog"; 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const generateBingoNumbers = (mode: string) => {
   switch (mode) {
@@ -107,10 +108,18 @@ export default function Gameplay() {
   const router = useRouter();
   const [selectSound, setSelectSound] = useState<Audio.Sound | null>(null);
   const [backgroundSound, setBackgroundSound] = useState<Audio.Sound | null>(null);
+  const [soundOn, setSoundOn] = useState<boolean>(false); // Tracks sound effects
+  const [musicOn, setMusicOn] = useState<boolean>(true); // Tracks background music
+  const [modalVisible, setModalVisible] = useState(false);
+  const [nobingoSound, setNobingoSound] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
+        const savedSoundOn = await AsyncStorage.getItem('soundOn');
+        const savedMusicOn = await AsyncStorage.getItem('musicOn');
+        setSoundOn(savedSoundOn === 'true');
+        setMusicOn(savedMusicOn === 'true');
         const mode = await AsyncStorage.getItem('bingoMode');
         if (mode) {
           setBingoMode(mode);
@@ -125,20 +134,16 @@ export default function Gameplay() {
 
     const playBackgroundMusic = async () => {
       try {
-
-  
-
       ///
         const { sound: newSound } = await Audio.Sound.createAsync(
           require('../assets/music/gameplay.mp3'),
           {
-            shouldPlay: true,
+            shouldPlay: musicOn,
             isLooping: true,
           }
         );
         setBackgroundSound(newSound);
-        console.log('Playing background music');
-        await newSound.playAsync();
+        if (musicOn) await newSound.playAsync();
       } catch (error) {
         console.error('Error playing background music:', error);
       }
@@ -156,8 +161,21 @@ export default function Gameplay() {
       }
     };
 
+    const loadNobingoSound = async () => {
+      try {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require('../assets/music/nobingo.wav')
+        );
+        setNobingoSound(newSound);
+        console.log('No Bingo sound loaded');
+      } catch (error) {
+        console.error('Error loading No Bingo sound:', error);
+      }
+    };
+
     playBackgroundMusic();
     loadSelectSound();
+    loadNobingoSound();
 
     return () => {
       if (backgroundSound) {
@@ -165,6 +183,10 @@ export default function Gameplay() {
       }
       if (selectSound) {
         selectSound.unloadAsync();
+      }
+      if (nobingoSound) {
+        backgroundSound?.stopAsync();
+        nobingoSound.unloadAsync();
       }
     };
   }, []);
@@ -199,6 +221,7 @@ export default function Gameplay() {
   };
 
   const resetGame = () => {
+    setModalVisible(false)
     setMarkedNumbers(new Array(25).fill(false));
     setSelectionCount(0);
     setWinningNumbers(generateWinningNumbers(bingoMode));
@@ -206,16 +229,37 @@ export default function Gameplay() {
     console.log('Game reset');
   };
 
+  
+
   const checkWinningNumbers = () => {
     setRevealWinningNumbers(true);
     if (checkForBingo(markedNumbers, winningNumbers)) {
-      Alert.alert('Congratulations!', 'You have Bingo!', [
-        { text: 'OK', onPress: () => console.log('Bingo acknowledged') },
-      ]);
+      // Alert.alert('Congratulations!', 'You have Bingo!', [
+      //   { text: 'OK', onPress: () => console.log('Bingo acknowledged') },
+      setModalVisible(true)
+      // ]);
+      // showCustomAlert('Congratulations! You have Bingo!', 'success');
     } else {
-      Alert.alert('No Bingo', 'Try again!');
+      // showCustomAlert('No Bingo. Try again!', 'failure');
+      setModalVisible(true)
     }
   };
+
+  // Play and stop No Bingo sound on modal open/close
+  useEffect(() => {
+    if (modalVisible) {
+      if (nobingoSound) {
+        nobingoSound.playAsync();
+        console.log('Playing No Bingo sound');
+      }
+    } else {
+      if (nobingoSound) {
+        nobingoSound.stopAsync();
+        console.log('Stopping No Bingo sound');
+      }
+    }
+  }, [modalVisible]);
+
 
   return (
     <ImageBackground
@@ -223,6 +267,34 @@ export default function Gameplay() {
       style={styles.background}
     >
       <View style={styles.container}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          Alert.alert('Modal has been closed.');
+          setModalVisible(!modalVisible);
+        }}>
+        <View style={styles.modalContainer}>
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.headerText}>You Lose</Text>
+          </View>
+          <View style={styles.buttonRow}>
+
+          <TouchableOpacity style={styles.optionButton} onPress={()=>{resetGame()}}>  
+            <MaterialCommunityIcons name="restart" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.optionButton}>
+            <MaterialCommunityIcons name="menu" size={24} color="white" />
+          </TouchableOpacity>
+
+          </View>
+          
+        </View>
+        </View>
+      </Modal>
+
         <TouchableOpacity style={styles.settingsIcon} onPress={() => router.push('./settings')}>
           <Image
             source={require('../assets/images/settings.png')}
@@ -245,9 +317,9 @@ export default function Gameplay() {
         <TouchableOpacity style={styles.checkButton} onPress={checkWinningNumbers}>
           <Text style={styles.checkButtonText}>Check Winning Numbers</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
+        {/* <TouchableOpacity style={styles.resetButton} onPress={resetGame}>
           <Text style={styles.resetButtonText}>Reset Game</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <View style={styles.adContainer}>
           <InlineAd/>
@@ -321,7 +393,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 15,
     paddingHorizontal: 30,
-    backgroundColor: '#6a5acd',
+    backgroundColor: '#32CD32',
     borderRadius: 10,
   },
   checkButtonText: {
@@ -346,5 +418,50 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '50%',
     alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#D87FD2',
+  },
+  header: {
+    backgroundColor: '#862D91',
+    padding: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  headerText: {
+    fontSize: 24,
+    color: '#FFD700',
+    fontWeight: 'bold',
+  },
+  card: {
+    width: '90%',
+    height: '40%',
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  optionButton: {
+    backgroundColor: '#1E90FF',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    alignItems: 'center',
+    width: '20%',
+    marginHorizontal: 5,
+  },
+  optionText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
   },
 });

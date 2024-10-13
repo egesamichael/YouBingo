@@ -1,12 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
-import { useState } from 'react';
 import { Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 export default function SettingsScreen() {
-  const [soundOn, setSoundOn] = useState(false);
-  const [musicOn, setMusicOn] = useState(false);
-  const [bingoMode, setBingoMode] = useState('Classic Bingo');
+  const [soundOn, setSoundOn] = useState<boolean>(false);
+  const [musicOn, setMusicOn] = useState<boolean>(false);
+
+  // Load settings from AsyncStorage when the component mounts
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const soundSetting = await AsyncStorage.getItem('soundOn');
+        const musicSetting = await AsyncStorage.getItem('musicOn');
+        if (soundSetting !== null) {
+          setSoundOn(JSON.parse(soundSetting));
+        }
+        if (musicSetting !== null) {
+          setMusicOn(JSON.parse(musicSetting));
+        }
+      } catch (error) {
+        console.error('Failed to load settings', error);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  // Toggle sound setting and save it to AsyncStorage
+  const toggleSound = async () => {
+    try {
+      const newSoundSetting = !soundOn;
+      setSoundOn(newSoundSetting);
+      await AsyncStorage.setItem('soundOn', JSON.stringify(newSoundSetting));
+    } catch (error) {
+      console.error('Failed to save sound setting', error);
+    }
+  };
+
+  // Toggle music setting and save it to AsyncStorage
+  const toggleMusic = async () => {
+    try {
+      const newMusicSetting = !musicOn;
+      setMusicOn(newMusicSetting);
+      await AsyncStorage.setItem('musicOn', JSON.stringify(newMusicSetting));
+    } catch (error) {
+      console.error('Failed to save music setting', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -20,12 +62,12 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.toggleButton, 
+                styles.toggleButton,
                 { backgroundColor: soundOn ? '#1E90FF' : '#FF4500' },
               ]}
-              onPress={() => setSoundOn(!soundOn)}
+              onPress={toggleSound}
             >
               {soundOn ? (
                 <Entypo name="sound" size={24} color="white" />
@@ -34,12 +76,12 @@ export default function SettingsScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.toggleButton, 
+                styles.toggleButton,
                 { backgroundColor: musicOn ? '#1E90FF' : '#FF4500' },
               ]}
-              onPress={() => setMusicOn(!musicOn)}
+              onPress={toggleMusic}
             >
               {musicOn ? (
                 <MaterialCommunityIcons name="music-note" size={24} color="white" />
@@ -50,10 +92,13 @@ export default function SettingsScreen() {
           </View>
 
           <TouchableOpacity style={styles.optionButton}>
-            <Text style={styles.optionText}>Language</Text>
+            <Text style={styles.optionText}>Game level</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.optionButton}>
-            <Text style={styles.optionText}>Invite</Text>
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => router.push('./themescreen')}
+          >
+            <Text style={styles.optionText}>Themes</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.optionButton}>
             <Text style={styles.optionText}>About</Text>
@@ -70,7 +115,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#D87FD2', // Pinkish background
+    backgroundColor: '#D87FD2',
   },
   backgroundImage: {
     flex: 1,
